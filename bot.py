@@ -68,10 +68,37 @@ def escape_markdown(text: str) -> str:
     special_chars = r'_*[]()~`>#+-=|{}.!'
     return ''.join(f'\\{char}' if char in special_chars else char for char in str(text))
 
+import certifi
+
+# Start dummy web server immediately for Render Free Web Service port scanning
+class HealthHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/plain')
+        self.end_headers()
+        self.wfile.write(b"Bot is alive!")
+    def log_message(self, format, *args):
+        return
+
+def _start_early_web():
+    try:
+        render_port = int(os.getenv("PORT", 8080))
+        server = HTTPServer(('0.0.0.0', render_port), HealthHandler)
+        server.serve_forever()
+    except Exception as e:
+        logger.error(f"Health server error: {e}")
+
+threading.Thread(target=_start_early_web, daemon=True).start()
+
 # MongoDB Connection
 class Database:
     def __init__(self):
-        self.client = MongoClient(MONGODB_URI)
+        self.client = MongoClient(
+            MONGODB_URI,
+            tlsCAFile=certifi.where(),
+            tlsAllowInvalidCertificates=True,
+            serverSelectionTimeoutMS=10000
+        )
         self.db = self.client[DATABASE_NAME]
         self.users = self.db.users
         self.attacks = self.db.attacks
@@ -1007,27 +1034,7 @@ def main():
     print(f"🌐 API URL: {API_URL}")
     print(f"🔑 API Key: {API_KEY[:10]}...")
     print(f"🚫 Blocked Ports: {get_blocked_ports_list()}")
-    # Start dummy web server for Render Free Web Service
-    class HealthHandler(BaseHTTPRequestHandler):
-        def do_GET(self):
-            self.send_response(200)
-            self.send_header('Content-type', 'text/plain')
-            self.end_headers()
-            self.wfile.write(b"Bot is alive!")
-        def log_message(self, format, *args):
-            return
-
-    port = int(os.getenv("PORT", 8080))
-    def start_web():
-        try:
-            server = HTTPServer(('0.0.0.0', port), HealthHandler)
-            server.serve_forever()
-        except Exception as e:
-            logger.error(f"Health server error: {e}")
-
-    threading.Thread(target=start_web, daemon=True).start()
-    print(f"🌍 Web server listening on port {port} (Render compatible)")
-
+    print("✅ Bot is running!")
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":
