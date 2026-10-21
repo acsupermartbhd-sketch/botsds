@@ -20,6 +20,8 @@ import html
 import uuid
 import os
 from dotenv import load_dotenv
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
 # Configure logging
 logging.basicConfig(
@@ -1005,8 +1007,27 @@ def main():
     print(f"🌐 API URL: {API_URL}")
     print(f"🔑 API Key: {API_KEY[:10]}...")
     print(f"🚫 Blocked Ports: {get_blocked_ports_list()}")
-    print("✅ Bot is running!")
-    
+    # Start dummy web server for Render Free Web Service
+    class HealthHandler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain')
+            self.end_headers()
+            self.wfile.write(b"Bot is alive!")
+        def log_message(self, format, *args):
+            return
+
+    port = int(os.getenv("PORT", 8080))
+    def start_web():
+        try:
+            server = HTTPServer(('0.0.0.0', port), HealthHandler)
+            server.serve_forever()
+        except Exception as e:
+            logger.error(f"Health server error: {e}")
+
+    threading.Thread(target=start_web, daemon=True).start()
+    print(f"🌍 Web server listening on port {port} (Render compatible)")
+
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":
