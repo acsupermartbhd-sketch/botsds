@@ -345,9 +345,11 @@ def check_api_health() -> Dict:
 
 def check_running_attacks() -> Dict:
     """Check running attacks for the user - REQUIRES API KEY"""
+    if not API_URL:
+        return {"success": False, "error": "API Service not configured"}
     try:
         response = requests.get(
-            f"{API_URL}/api/v1/active",  # Added /api/v1/ prefix
+            f"{API_URL}/api/v1/active",
             headers={"x-api-key": API_KEY, "Content-Type": "application/json"},
             timeout=10
         )
@@ -361,9 +363,11 @@ def check_running_attacks() -> Dict:
 
 def get_user_stats() -> Dict:
     """Get user statistics - REQUIRES API KEY"""
+    if not API_URL:
+        return {"success": False, "error": "API Service not configured"}
     try:
         response = requests.get(
-            f"{API_URL}/api/v1/stats",  # Added /api/v1/ prefix
+            f"{API_URL}/api/v1/stats",
             headers={"x-api-key": API_KEY, "Content-Type": "application/json"},
             timeout=10
         )
@@ -377,9 +381,11 @@ def get_user_stats() -> Dict:
 
 def launch_attack(ip: str, port: int, duration: int) -> Dict:
     """Launch attack via API - REQUIRES API KEY"""
+    if not API_URL:
+        return {"success": False, "error": "Backend API Server is not configured. Please contact the bot admin."}
     try:
         response = requests.post(
-            f"{API_URL}/api/v1/attack",  # Added /api/v1/ prefix
+            f"{API_URL}/api/v1/attack",
             json={"ip": ip, "port": port, "duration": duration},
             headers={"x-api-key": API_KEY, "Content-Type": "application/json"},
             timeout=15
